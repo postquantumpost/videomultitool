@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+./videomultitool.py --help
+#./videomultitool.py --debug --blur --input vsamp/nope.mp4 --output nopeout.mp4
+#f=vsamp/nipples.mp4
+
+process_file()
+{
+    local f=$1
+    echo $f
+    fshort=${f##*/}
+    echo $fshort
+    fbase=${fshort%%.*}
+    echo $fbase
+    fout=${fbase}.mp4
+    echo $fout
+    echo ./videomultitool.py --debug --blankless --input $f --output $fout
+    ./videomultitool.py --debug --blankless --input $f --output $fout
+}
+
+for fin in knot.mp4 belly.mp4 deep.mp4 xltoy.mp4
+do
+    process_file vsamp/$fin
+done
+

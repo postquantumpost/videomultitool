@@ -1,0 +1,9 @@
+av>=11
+numpy<2
+opencv-python-headless
+retina-face
+deepface
+tf-keras
+werkzeug
+nudenet
+hyperlpr3
