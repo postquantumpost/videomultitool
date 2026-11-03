@@ -24,8 +24,8 @@ Model weights are downloaded on first use (into `~/.deepface` and `~/.hyperlpr3`
 ## Usage
 
 ```
-./videomultitool.py [--debug] [--debug2] [--slowok] [--blur | --blankless]
-                    [--input FILE] [--output FILE]
+./videomultitool.py [--debug] [--debug2] [--slowok] [--nobluredge] [--fill]
+                    [--blur | --blankless] [--input FILE] [--output FILE]
 ```
 
 | Flag | Effect |
@@ -33,6 +33,8 @@ Model weights are downloaded on first use (into `~/.deepface` and `~/.hyperlpr3`
 | `--debug` | debug output; with `--blur`, draws the boxes and timestamp/frame number |
 | `--debug2` | enables `procfun_debug2` (random test boxes) |
 | `--slowok` | allows slow processing functions (currently `procfun_retinaface`) |
+| `--nobluredge` | with `--blur`, do not extend the blur beyond each box |
+| `--fill` | with `--blur`, fill each box with its average colour instead of blurring |
 | `--blur` | blur mode (below) |
 | `--blankless` | border-cropping mode (below) |
 
@@ -53,6 +55,16 @@ box they return is blurred:
 | `procfun_nudenet` | exposed breasts/genitalia/buttocks/anus | NudeNet |
 | `procfun_hyperlpr` | license plates | HyperLPR3 (trained on Chinese plates) |
 | `procfun_debug2` | 10 random boxes, only with `--debug2` | — |
+
+Blur strength scales with box size: boxes up to 100 px (largest side) use the
+base blur, larger boxes proportionally more (200 px gets twice the blur). By
+default the blur also extends 10% of the box width beyond the left and right
+edges and 10% of the box height beyond the top and bottom, fading from full
+strength at the box edge to none at the outer edge (`--nobluredge` turns this
+off). With `--fill`, each box is filled with the average colour of its
+contents, and that colour fades out over the same edge margin, blended with
+the blur. Overlapping boxes are blended so every pixel is changed only once.
+These constants are at the top of `filter_in_to_out.py`.
 
 Thresholds and options are constants at the top of each `procfun_*.py` file.
 A detector that fails to load prints a warning and is skipped.

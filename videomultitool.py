@@ -16,6 +16,8 @@ vmt_debug2 = False
 slowok = False
 do_blur = False
 blankless = False
+blur_edge = True
+fill = False
 
 
 def parse_args(argv=None):
@@ -36,6 +38,17 @@ def parse_args(argv=None):
         "--slowok",
         action="store_true",
         help="allow slow processing functions (e.g. RetinaFace)",
+    )
+    parser.add_argument(
+        "--nobluredge",
+        dest="blur_edge",
+        action="store_false",
+        help="do not extend the blur with a fade beyond each box edge",
+    )
+    parser.add_argument(
+        "--fill",
+        action="store_true",
+        help="fill each box with its average colour instead of blurring it",
     )
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument(
@@ -72,17 +85,20 @@ def process_input(input_file, output_file=None):
             blankless_in_to_out(input_file, output_file, debug=vmt_debug)
         elif do_blur:
             filter_in_to_out(input_file, output_file, debug=vmt_debug,
-                             debug2=vmt_debug2, slowok=slowok)
+                             debug2=vmt_debug2, slowok=slowok,
+                             blur_edge=blur_edge, fill=fill)
 
 
 def main(argv=None):
-    global vmt_debug, vmt_debug2, slowok, do_blur, blankless
+    global vmt_debug, vmt_debug2, slowok, do_blur, blankless, blur_edge, fill
     args = parse_args(argv)
     vmt_debug = args.debug
     vmt_debug2 = args.debug2
     slowok = args.slowok
     do_blur = args.do_blur
     blankless = args.blankless
+    blur_edge = args.blur_edge
+    fill = args.fill
 
     if vmt_debug:
         print(f"Debug: arguments = {vars(args)}", file=sys.stderr)

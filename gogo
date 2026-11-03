@@ -14,11 +14,14 @@ process_file()
     echo $fbase
     fout=${fbase}.mp4
     echo $fout
-    echo ./videomultitool.py --debug --blankless --input $f --output $fout
-    ./videomultitool.py --debug --blankless --input $f --output $fout
+    #echo ./videomultitool.py --debug --blankless --input $f --output $fout
+    #./videomultitool.py --debug --blankless --input $f --output $fout
+    echo time ./videomultitool.py --debug --blur --input $f --output $fout
+    time ./videomultitool.py --debug --blur --input $f --output $fout
 }
 
-for fin in knot.mp4 belly.mp4 deep.mp4 xltoy.mp4
+#for fin in nipples.mp4 smile.mp4 knot.mp4 belly.mp4 deep.mp4 noisy.mp4 nope.mp4 xltoy.mp4
+for fin in nipples.mp4 smile.mp4 deep.mp4
 do
     process_file vsamp/$fin
 done
