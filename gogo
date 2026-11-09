@@ -7,21 +7,26 @@
 process_file()
 {
     local f=$1
-    echo $f
+    echo ''
+    echo ''
+    #echo $f
     fshort=${f##*/}
-    echo $fshort
+    #echo $fshort
     fbase=${fshort%%.*}
-    echo $fbase
+    #echo $fbase
     fout=${fbase}.mp4
-    echo $fout
+    #echo $fout
     #echo ./videomultitool.py --debug --blankless --input $f --output $fout
     #./videomultitool.py --debug --blankless --input $f --output $fout
-    echo time ./videomultitool.py --debug --blur --input $f --output $fout
-    time ./videomultitool.py --debug --blur --input $f --output $fout
+    set -x
+    time ./videomultitool.py --debug --slowok --blur --input $f --output $fout
+    set +x
 }
 
 #for fin in nipples.mp4 smile.mp4 knot.mp4 belly.mp4 deep.mp4 noisy.mp4 nope.mp4 xltoy.mp4
-for fin in nipples.mp4 smile.mp4 deep.mp4
+#for fin in nipples.mp4 smile.mp4 deep.mp4
+#for fin in dragon.mp4
+for fin in dragon1.mp4 dragon2.mp4 dragon3.mp4
 do
     process_file vsamp/$fin
 done

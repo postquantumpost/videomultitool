@@ -25,7 +25,8 @@ Model weights are downloaded on first use (into `~/.deepface` and `~/.hyperlpr3`
 
 ```
 ./videomultitool.py [--debug] [--debug2] [--slowok] [--nobluredge] [--fill]
-                    [--blur | --blankless] [--input FILE] [--output FILE]
+                    [--blur | --blankless] [--alacarte LIST]
+                    [--input FILE] [--output FILE]
 ```
 
 | Flag | Effect |
@@ -37,10 +38,32 @@ Model weights are downloaded on first use (into `~/.deepface` and `~/.hyperlpr3`
 | `--fill` | with `--blur`, fill each box with its average colour instead of blurring |
 | `--blur` | blur mode (below) |
 | `--blankless` | border-cropping mode (below) |
+| `--alacarte LIST` | blur using only the listed processing functions; an empty string copies the file unchanged |
 
 A file is only processed when `--input`, `--output` and one of the modes
-`--blur` or `--blankless` are given; the two modes cannot be combined. In both
-modes the audio is copied over unchanged and progress is printed every 10%.
+`--blur`, `--blankless` or `--alacarte` are given. `--blankless` cannot be
+combined with either of the other modes. In processing modes the audio is
+copied over unchanged and progress is printed every 10%.
+
+### `--alacarte LIST`
+
+Select processing functions with a comma-separated list: `retinaface`,
+`deepface`, `nudenet`, `hyperlpr`, and `debug2`. All five are disabled first,
+then only the listed functions are enabled, regardless of `--debug2` or
+`--slowok`. Selecting `retinaface` explicitly allows the slow detector without
+requiring `--slowok`. Functions still run in the fixed order shown below, not
+the list order. Surrounding whitespace and duplicate names are accepted;
+unknown names and empty entries within a nonempty list are errors.
+
+```
+./videomultitool.py --alacarte "deepface,retinaface" --input in.mp4 --output out.mp4
+./videomultitool.py --alacarte "" --input in.mp4 --output out.mp4
+```
+
+`--blur` is optional with `--alacarte`. An empty list copies the entire file
+byte-for-byte, with no decoding, re-encoding, detector loading, or debug
+overlays, even if other blur/debug options are supplied. Without `--alacarte`,
+the existing `--blur`, `--slowok`, and `--debug2` defaults are unchanged.
 
 ### `--blur`
 

@@ -24,6 +24,8 @@ def procfun_deepface(frame, info):
     info: FrameInfo for this frame.
     Returns a list of (x, y, width, height) boxes to blur.
     """
+    if not info.deepface:
+        return []
     deepface = _model.get()
     if deepface is None:
         return []

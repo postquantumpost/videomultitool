@@ -3,6 +3,7 @@
 
 import argparse
 import os
+import shutil
 import sys
 
 # Hide TensorFlow's informational startup messages (used by RetinaFace/deepface).
@@ -18,6 +19,26 @@ do_blur = False
 blankless = False
 blur_edge = True
 fill = False
+alacarte = None
+retinaface = True
+deepface = True
+nudenet = True
+hyperlpr = True
+
+PROCESSING_NAMES = ("retinaface", "deepface", "nudenet", "hyperlpr", "debug2")
+
+
+def parse_alacarte(value):
+    if not value.strip():
+        return ()
+    names = tuple(word.strip() for word in value.split(","))
+    for name in names:
+        if name not in PROCESSING_NAMES:
+            raise argparse.ArgumentTypeError(
+                f"unknown processing function {name!r}; choose from "
+                + ", ".join(PROCESSING_NAMES)
+            )
+    return names
 
 
 def parse_args(argv=None):
@@ -63,6 +84,13 @@ def parse_args(argv=None):
         help="crop letterbox/pillarbox borders (needs --input and --output)",
     )
     parser.add_argument(
+        "--alacarte",
+        type=parse_alacarte,
+        metavar="LIST",
+        help="blur using only comma-separated retinaface,deepface,nudenet,hyperlpr,debug2; "
+             "an empty string copies the file unchanged (needs --input and --output)",
+    )
+    parser.add_argument(
         "--input",
         metavar="FILE",
         help="input video file",
@@ -72,7 +100,16 @@ def parse_args(argv=None):
         metavar="FILE",
         help="output video file",
     )
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    if args.alacarte is not None and args.blankless:
+        parser.error("--alacarte cannot be combined with --blankless")
+    for name in PROCESSING_NAMES:
+        if args.alacarte is not None:
+            enabled = name in args.alacarte
+        else:
+            enabled = args.debug2 if name == "debug2" else True
+        setattr(args, name, enabled)
+    return args
 
 
 def process_input(input_file, output_file=None):
@@ -81,20 +118,30 @@ def process_input(input_file, output_file=None):
     print(f"Input file: {input_file}")
     if output_file:
         print(f"Output file: {output_file}")
-        if blankless:
+        if alacarte == ():
+            shutil.copyfile(input_file, output_file)
+        elif blankless:
             blankless_in_to_out(input_file, output_file, debug=vmt_debug)
-        elif do_blur:
+        elif do_blur or alacarte is not None:
             filter_in_to_out(input_file, output_file, debug=vmt_debug,
                              debug2=vmt_debug2, slowok=slowok,
-                             blur_edge=blur_edge, fill=fill)
+                             blur_edge=blur_edge, fill=fill,
+                             retinaface=retinaface, deepface=deepface,
+                             nudenet=nudenet, hyperlpr=hyperlpr)
 
 
 def main(argv=None):
     global vmt_debug, vmt_debug2, slowok, do_blur, blankless, blur_edge, fill
+    global alacarte, retinaface, deepface, nudenet, hyperlpr
     args = parse_args(argv)
     vmt_debug = args.debug
     vmt_debug2 = args.debug2
-    slowok = args.slowok
+    alacarte = args.alacarte
+    retinaface = args.retinaface
+    deepface = args.deepface
+    nudenet = args.nudenet
+    hyperlpr = args.hyperlpr
+    slowok = args.slowok or (alacarte is not None and retinaface)
     do_blur = args.do_blur
     blankless = args.blankless
     blur_edge = args.blur_edge

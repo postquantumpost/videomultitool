@@ -39,6 +39,10 @@ class FrameInfo:
     blur_edge: bool = True
     fill: bool = False
     boxes: list = field(default_factory=list)
+    retinaface: bool = True
+    deepface: bool = True
+    nudenet: bool = True
+    hyperlpr: bool = True
 
 
 # Processing functions: func(frame: np.ndarray, info: FrameInfo) -> list of
@@ -266,7 +270,8 @@ def build_output_frame(in_frame, in_image, out_image, pix_fmt):
 
 
 def filter_in_to_out(input_file, output_file, debug=False, debug2=False, slowok=False,
-                     blur_edge=True, fill=False):
+                     blur_edge=True, fill=False, retinaface=True, deepface=True,
+                     nudenet=True, hyperlpr=True):
     with av.open(input_file) as in_container, av.open(output_file, "w") as out_container:
         if not in_container.streams.video:
             raise ValueError(f"{input_file}: no video stream found")
@@ -292,7 +297,9 @@ def filter_in_to_out(input_file, output_file, debug=False, debug2=False, slowok=
                 image = frame.to_ndarray(format="bgr24")
                 timestamp = float(frame.time) if frame.time is not None else 0.0
                 info = FrameInfo(frame_number, timestamp, width, height,
-                                 debug, debug2, slowok, blur_edge, fill)
+                                 debug, debug2, slowok, blur_edge, fill,
+                                 retinaface=retinaface, deepface=deepface,
+                                 nudenet=nudenet, hyperlpr=hyperlpr)
                 out_image = process_frame(image, info)
 
                 out_frame = build_output_frame(frame, image, out_image, out_video.pix_fmt)

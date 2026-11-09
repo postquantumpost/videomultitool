@@ -21,6 +21,8 @@ def procfun_hyperlpr(frame, info):
     info: FrameInfo for this frame.
     Returns a list of (x, y, width, height) boxes to blur.
     """
+    if not info.hyperlpr:
+        return []
     catcher = _model.get()
     if catcher is None:
         return []

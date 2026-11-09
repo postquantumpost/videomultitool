@@ -30,6 +30,8 @@ def procfun_nudenet(frame, info):
     info: FrameInfo for this frame.
     Returns a list of (x, y, width, height) boxes to blur.
     """
+    if not info.nudenet:
+        return []
     detector = _model.get()
     if detector is None:
         return []
