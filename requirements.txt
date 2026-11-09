@@ -1,9 +1,10 @@
 av>=11
 numpy<2
-opencv-python-headless
+opencv-python-headless<4.12
 retina-face
 deepface
 tf-keras
 werkzeug
 nudenet
 hyperlpr3
+fastanpr>=0.1.13

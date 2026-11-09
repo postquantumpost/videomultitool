@@ -30,7 +30,6 @@ class AlacarteTests(unittest.TestCase):
         args = cli.parse_args(["--blur"])
         self.assertIsNone(args.alacarte)
         self.assertFalse(args.debug2)
-        self.assertFalse(args.slowok)
         for name in cli.PROCESSING_NAMES[:-1]:
             self.assertTrue(getattr(args, name))
         self.assertTrue(cli.parse_args(["--debug2"]).debug2)
@@ -38,7 +37,7 @@ class AlacarteTests(unittest.TestCase):
     def test_selection_booleans(self):
         for name in cli.PROCESSING_NAMES:
             with self.subTest(name=name):
-                args = cli.parse_args(["--alacarte", name, "--debug2", "--slowok"])
+                args = cli.parse_args(["--alacarte", name, "--debug2"])
                 for candidate in cli.PROCESSING_NAMES:
                     self.assertEqual(getattr(args, candidate), candidate == name)
 
@@ -48,7 +47,7 @@ class AlacarteTests(unittest.TestCase):
         self.assertTrue(args.retinaface)
         self.assertFalse(args.nudenet)
         for value in ("", "  "):
-            args = cli.parse_args(["--alacarte", value, "--debug2", "--slowok"])
+            args = cli.parse_args(["--alacarte", value, "--debug2"])
             self.assertEqual(args.alacarte, ())
             for name in cli.PROCESSING_NAMES:
                 self.assertFalse(getattr(args, name))
@@ -61,6 +60,9 @@ class AlacarteTests(unittest.TestCase):
             ["--alacarte", "deepface,,retinaface"],
             ["--alacarte"],
             ["--alacarte", "", "--blankless"],
+            ["--alacarte", "prp"],
+            ["--alacarte", "simplelpr"],
+            ["--slowok"],
         ):
             with self.subTest(args=args), contextlib.redirect_stderr(io.StringIO()):
                 with self.assertRaises(SystemExit) as error:
@@ -74,13 +76,12 @@ class AlacarteTests(unittest.TestCase):
             options = filter_video.call_args.kwargs
             self.assertTrue(options["retinaface"])
             self.assertTrue(options["deepface"])
-            self.assertTrue(options["slowok"])
             self.assertFalse(options["nudenet"])
             self.assertFalse(options["hyperlpr"])
             self.assertFalse(options["debug2"])
             self.run_cli("--blur", "--input", "in.mp4", "--output", "out.mp4")
             options = filter_video.call_args.kwargs
-            self.assertFalse(options["slowok"])
+            self.assertTrue(options["retinaface"])
             self.assertTrue(options["nudenet"])
             self.assertTrue(options["hyperlpr"])
 
@@ -92,15 +93,16 @@ class AlacarteTests(unittest.TestCase):
             source.write_bytes(payload)
             with patch.object(cli, "filter_in_to_out") as filter_video:
                 self.run_cli("--alacarte", "", "--blur", "--debug", "--debug2",
-                             "--slowok", "--fill", "--input", str(source),
+                             "--fill", "--input", str(source),
                              "--output", str(target))
                 filter_video.assert_not_called()
             self.assertEqual(target.read_bytes(), payload)
 
     def test_disabled_functions_do_not_load_models(self):
-        info = filtering.FrameInfo(0, 0.0, 64, 64, slowok=True,
+        info = filtering.FrameInfo(0, 0.0, 64, 64,
                                    retinaface=False, deepface=False,
-                                   nudenet=False, hyperlpr=False)
+                                   nudenet=False, hyperlpr=False,
+                                   fastanpr=False)
         for name in cli.PROCESSING_NAMES[:-1]:
             module = importlib.import_module(f"procfun_{name}")
             with self.subTest(name=name), patch.object(module._model, "get") as load:
@@ -111,7 +113,7 @@ class AlacarteTests(unittest.TestCase):
             random_number.assert_not_called()
 
     def test_enabled_functions_reach_models(self):
-        info = filtering.FrameInfo(0, 0.0, 64, 64, slowok=True)
+        info = filtering.FrameInfo(0, 0.0, 64, 64)
         for name in cli.PROCESSING_NAMES[:-1]:
             module = importlib.import_module(f"procfun_{name}")
             with self.subTest(name=name), patch.object(

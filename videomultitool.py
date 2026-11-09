@@ -14,7 +14,6 @@ from filter_in_to_out import filter_in_to_out
 
 vmt_debug = False
 vmt_debug2 = False
-slowok = False
 do_blur = False
 blankless = False
 blur_edge = True
@@ -24,8 +23,12 @@ retinaface = True
 deepface = True
 nudenet = True
 hyperlpr = True
+fastanpr = True
 
-PROCESSING_NAMES = ("retinaface", "deepface", "nudenet", "hyperlpr", "debug2")
+PROCESSING_NAMES = (
+    "retinaface", "deepface", "nudenet", "hyperlpr",
+    "fastanpr", "debug2",
+)
 
 
 def parse_alacarte(value):
@@ -56,11 +59,6 @@ def parse_args(argv=None):
         help="enable second-level debug (random test blur boxes)",
     )
     parser.add_argument(
-        "--slowok",
-        action="store_true",
-        help="allow slow processing functions (e.g. RetinaFace)",
-    )
-    parser.add_argument(
         "--nobluredge",
         dest="blur_edge",
         action="store_false",
@@ -87,7 +85,7 @@ def parse_args(argv=None):
         "--alacarte",
         type=parse_alacarte,
         metavar="LIST",
-        help="blur using only comma-separated retinaface,deepface,nudenet,hyperlpr,debug2; "
+        help="blur using only comma-separated " + ",".join(PROCESSING_NAMES) + "; "
              "an empty string copies the file unchanged (needs --input and --output)",
     )
     parser.add_argument(
@@ -124,15 +122,17 @@ def process_input(input_file, output_file=None):
             blankless_in_to_out(input_file, output_file, debug=vmt_debug)
         elif do_blur or alacarte is not None:
             filter_in_to_out(input_file, output_file, debug=vmt_debug,
-                             debug2=vmt_debug2, slowok=slowok,
+                             debug2=vmt_debug2,
                              blur_edge=blur_edge, fill=fill,
                              retinaface=retinaface, deepface=deepface,
-                             nudenet=nudenet, hyperlpr=hyperlpr)
+                             nudenet=nudenet, hyperlpr=hyperlpr,
+                             fastanpr=fastanpr)
 
 
 def main(argv=None):
-    global vmt_debug, vmt_debug2, slowok, do_blur, blankless, blur_edge, fill
+    global vmt_debug, vmt_debug2, do_blur, blankless, blur_edge, fill
     global alacarte, retinaface, deepface, nudenet, hyperlpr
+    global fastanpr
     args = parse_args(argv)
     vmt_debug = args.debug
     vmt_debug2 = args.debug2
@@ -141,7 +141,7 @@ def main(argv=None):
     deepface = args.deepface
     nudenet = args.nudenet
     hyperlpr = args.hyperlpr
-    slowok = args.slowok or (alacarte is not None and retinaface)
+    fastanpr = args.fastanpr
     do_blur = args.do_blur
     blankless = args.blankless
     blur_edge = args.blur_edge

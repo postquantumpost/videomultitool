@@ -17,6 +17,7 @@ import numpy as np
 
 from procfun_debug2 import procfun_debug2
 from procfun_deepface import procfun_deepface
+from procfun_fastanpr import procfun_fastanpr
 from procfun_hyperlpr import procfun_hyperlpr
 from procfun_nudenet import procfun_nudenet
 from procfun_retinaface import procfun_retinaface
@@ -41,7 +42,6 @@ class FrameInfo:
     height: int
     debug: bool = False
     debug2: bool = False
-    slowok: bool = False
     blur_edge: bool = True
     fill: bool = False
     boxes: list = field(default_factory=list)
@@ -49,6 +49,7 @@ class FrameInfo:
     deepface: bool = True
     nudenet: bool = True
     hyperlpr: bool = True
+    fastanpr: bool = True
 
 
 # Processing functions: func(frame: np.ndarray, info: FrameInfo) -> list of
@@ -59,6 +60,7 @@ PROCESSING_FUNCTIONS = [
     procfun_deepface,
     procfun_nudenet,
     procfun_hyperlpr,
+    procfun_fastanpr,
     procfun_debug2,
 ]
 
@@ -283,9 +285,9 @@ def build_output_frame(in_frame, in_image, out_image, pix_fmt):
     return frame_from_planes(planes, pix_fmt, width, height)
 
 
-def filter_in_to_out(input_file, output_file, debug=False, debug2=False, slowok=False,
+def filter_in_to_out(input_file, output_file, debug=False, debug2=False,
                      blur_edge=True, fill=False, retinaface=True, deepface=True,
-                     nudenet=True, hyperlpr=True):
+                     nudenet=True, hyperlpr=True, fastanpr=True):
     if not math.isfinite(half_window_seconds) or half_window_seconds < 0:
         raise ValueError("half_window_seconds must be finite and nonnegative")
     window_seconds = Fraction(str(half_window_seconds))
@@ -336,9 +338,10 @@ def filter_in_to_out(input_file, output_file, debug=False, debug2=False, slowok=
                              if frame.pts is not None and frame.time_base is not None
                              else Fraction(frame_number) / rate)
                 info = FrameInfo(frame_number, float(timestamp), width, height,
-                                 debug, debug2, slowok, blur_edge, fill,
+                                 debug=debug, debug2=debug2, blur_edge=blur_edge, fill=fill,
                                  retinaface=retinaface, deepface=deepface,
-                                 nudenet=nudenet, hyperlpr=hyperlpr)
+                                 nudenet=nudenet, hyperlpr=hyperlpr,
+                                 fastanpr=fastanpr)
                 analyze_frame(image, info)
                 pending.append((timestamp, frame, image, info))
                 detections.append((timestamp, info.boxes))

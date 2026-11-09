@@ -22,15 +22,11 @@ _model = LazyModel("RetinaFace", _load)
 def procfun_retinaface(frame, info):
     """Detect faces with RetinaFace and return their bounding boxes.
 
-    RetinaFace is very slow on CPU; use --slowok or select it with --alacarte.
-
     frame: BGR image as a numpy array (height, width, 3); must not be modified.
     info: FrameInfo for this frame.
     Returns a list of (x, y, width, height) boxes to blur.
     """
     if not info.retinaface:
-        return []
-    if not info.slowok:
         return []
     loaded = _model.get()
     if loaded is None:

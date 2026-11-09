@@ -3,28 +3,42 @@ A program to perform various video evaluation, editing, and filtering.
 
 ## Setup
 
-Uses the system Python 3 with distribution packages (Debian/Ubuntu/Mint):
+Use the project-local Python virtual environment (Debian/Ubuntu/Mint):
 
 ```
-sudo apt install python3-av python3-opencv python3-numpy ffmpeg
+sudo apt install python3-venv ffmpeg
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install -r requirements.txt
 ```
 
-The detectors (RetinaFace, deepface, NudeNet, HyperLPR) are only on PyPI.
-Install them for the current user, keeping numpy at the apt version so the
-apt OpenCV/PyAV modules keep working:
+Activate this environment in each new shell before running the program or
+tests. Install dependencies through `python3 -m pip` in the same environment.
+The requirements keep NumPy below 2 and headless OpenCV below 4.12: FastANPR's
+PaddleOCR dependency installs OpenCV 4.6 wheels compiled against NumPy 1.x,
+while newer headless OpenCV wheels require NumPy 2.
+
+If an existing environment reports `numpy.core.multiarray failed to import`
+or a NumPy ABI version mismatch, repair these dependencies together:
 
 ```
-echo "numpy==$(python3 -c 'import numpy; print(numpy.__version__)')" > /tmp/np.txt
-pip install --user --break-system-packages -c /tmp/np.txt \
-    retina-face deepface tf-keras werkzeug nudenet hyperlpr3
+source .venv/bin/activate
+python3 -m pip install --force-reinstall 'numpy>=1.26,<2' 'opencv-python-headless<4.12'
+python3 -m pip install 'numpy>=1.26,<2' scipy pandas tifffile contourpy
+python3 -m pip check
+python3 -c 'import cv2, numpy; print(cv2.__version__, numpy.__version__)'
 ```
+
+The second command resolves scientific dependencies that may also have been
+upgraded to releases requiring NumPy 2. Keep the NumPy constraint when adding
+packages later; otherwise a separate install can upgrade it again.
 
 Model weights are downloaded on first use (into `~/.deepface` and `~/.hyperlpr3`).
 
 ## Usage
 
 ```
-./videomultitool.py [--debug] [--debug2] [--slowok] [--nobluredge] [--fill]
+./videomultitool.py [--debug] [--debug2] [--nobluredge] [--fill]
                     [--blur | --blankless] [--alacarte LIST]
                     [--input FILE] [--output FILE]
 ```
@@ -33,7 +47,6 @@ Model weights are downloaded on first use (into `~/.deepface` and `~/.hyperlpr3`
 |---|---|
 | `--debug` | debug output; with `--blur`, draws the boxes and timestamp/frame number |
 | `--debug2` | enables `procfun_debug2` (random test boxes) |
-| `--slowok` | allows slow processing functions (currently `procfun_retinaface`) |
 | `--nobluredge` | with `--blur`, do not extend the blur beyond each box |
 | `--fill` | with `--blur`, fill each box with its average colour instead of blurring |
 | `--blur` | blur mode (below) |
@@ -48,22 +61,23 @@ copied over unchanged and progress is printed every 10%.
 ### `--alacarte LIST`
 
 Select processing functions with a comma-separated list: `retinaface`,
-`deepface`, `nudenet`, `hyperlpr`, and `debug2`. All five are disabled first,
-then only the listed functions are enabled, regardless of `--debug2` or
-`--slowok`. Selecting `retinaface` explicitly allows the slow detector without
-requiring `--slowok`. Functions still run in the fixed order shown below, not
+`deepface`, `nudenet`, `hyperlpr`, `fastanpr`, and `debug2`.
+All six are disabled first,
+then only the listed functions are enabled, regardless of `--debug2`.
+Functions still run in the fixed order shown below, not
 the list order. Surrounding whitespace and duplicate names are accepted;
 unknown names and empty entries within a nonempty list are errors.
 
 ```
 ./videomultitool.py --alacarte "deepface,retinaface" --input in.mp4 --output out.mp4
+./videomultitool.py --alacarte "fastanpr,hyperlpr" --input in.mp4 --output out.mp4
 ./videomultitool.py --alacarte "" --input in.mp4 --output out.mp4
 ```
 
 `--blur` is optional with `--alacarte`. An empty list copies the entire file
 byte-for-byte, with no decoding, re-encoding, detector loading, or debug
 overlays, even if other blur/debug options are supplied. Without `--alacarte`,
-the existing `--blur`, `--slowok`, and `--debug2` defaults are unchanged.
+all detectors, including RetinaFace, run with `--blur`; `debug2` remains opt-in.
 
 ### `--blur`
 
@@ -73,10 +87,11 @@ box they return is blurred:
 
 | Function | Detects | Library |
 |---|---|---|
-| `procfun_retinaface` | faces | RetinaFace, only with `--slowok` (frame scaled to 960 px max; ~5 s/frame on CPU) |
+| `procfun_retinaface` | faces | RetinaFace (frame scaled to 960 px max; ~5 s/frame on CPU) |
 | `procfun_deepface` | faces | deepface, YuNet backend |
 | `procfun_nudenet` | faces and exposed breasts/genitalia/buttocks/anus | NudeNet |
 | `procfun_hyperlpr` | license plates | HyperLPR3 (trained on Chinese plates) |
+| `procfun_fastanpr` | license plates | FastANPR's bundled detector, CPU, without OCR |
 | `procfun_debug2` | 10 random boxes, only with `--debug2` | — |
 
 Each list of detected boxes also applies to frames up to `half_window_seconds`
@@ -101,6 +116,11 @@ These constants are at the top of `filter_in_to_out.py`.
 
 Thresholds and options are constants at the top of each `procfun_*.py` file.
 A detector that fails to load prints a warning and is skipped.
+
+FastANPR uses detection only, retaining boxes even without recognized text.
+Its model weights ship with the package.
+FastANPR and its Ultralytics dependency use AGPL licensing; review their
+license terms before redistribution.
 
 NudeNet includes both `FACE_FEMALE` and `FACE_MALE`. Its local postprocessing
 uses `NUDENET_NMS_OVERLAP = 0.9` instead of the library's 0.45, retaining more
