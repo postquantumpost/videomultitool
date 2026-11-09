@@ -1,12 +1,15 @@
 """Frame-by-frame video filtering: decode, analyze, render, encode.
 
 Each decoded video frame is passed through PROCESSING_FUNCTIONS, which return
-bounding boxes (x, y, width, height) of regions to blur. RENDERING_FUNCTIONS
-then modify a copy of the frame (blur, debug overlays) before it is encoded.
+bounding boxes (x, y, width, height) of regions to blur. Frames are buffered
+to collect nearby detections before RENDERING_FUNCTIONS modify a copy once.
 Audio streams are copied to the output without re-encoding.
 """
 
+from collections import deque
 from dataclasses import dataclass, field
+from fractions import Fraction
+import math
 
 import av
 import cv2
@@ -25,6 +28,9 @@ from video_util import (
     frame_planes,
     mux_audio_packet,
 )
+
+# Apply detections this many seconds before and after their source frame.
+half_window_seconds = 0.15
 
 
 @dataclass
@@ -228,15 +234,23 @@ RENDERING_FUNCTIONS = [
 ]
 
 
-def process_frame(in_frame, info):
+def analyze_frame(in_frame, info):
     for func in PROCESSING_FUNCTIONS:
         boxes = func(in_frame, info)
         if boxes:
             info.boxes.extend(boxes)
+
+
+def render_frame(in_frame, info):
     out_frame = in_frame.copy()
     for func in RENDERING_FUNCTIONS:
         func(out_frame, in_frame, info)
     return out_frame
+
+
+def process_frame(in_frame, info):
+    analyze_frame(in_frame, info)
+    return render_frame(in_frame, info)
 
 
 def downsample_mask(mask, shape):
@@ -272,6 +286,9 @@ def build_output_frame(in_frame, in_image, out_image, pix_fmt):
 def filter_in_to_out(input_file, output_file, debug=False, debug2=False, slowok=False,
                      blur_edge=True, fill=False, retinaface=True, deepface=True,
                      nudenet=True, hyperlpr=True):
+    if not math.isfinite(half_window_seconds) or half_window_seconds < 0:
+        raise ValueError("half_window_seconds must be finite and nonnegative")
+    window_seconds = Fraction(str(half_window_seconds))
     with av.open(input_file) as in_container, av.open(output_file, "w") as out_container:
         if not in_container.streams.video:
             raise ValueError(f"{input_file}: no video stream found")
@@ -283,6 +300,26 @@ def filter_in_to_out(input_file, output_file, debug=False, debug2=False, slowok=
         out_video = add_video_encoder(out_container, in_video, width, height)
         audio_map = add_audio_copies(out_container, in_container)
         progress = Progress(in_container, in_video)
+        pending = deque()
+        detections = deque()
+        rate = in_video.average_rate or in_video.guessed_rate or 30
+
+        def write_pending_frame():
+            timestamp, frame, image, info = pending.popleft()
+            while detections and detections[0][0] < timestamp - window_seconds:
+                detections.popleft()
+            info.boxes = [
+                box
+                for detected_at, boxes in detections
+                if detected_at <= timestamp + window_seconds
+                for box in boxes
+            ]
+            out_image = render_frame(image, info)
+            out_frame = build_output_frame(frame, image, out_image, out_video.pix_fmt)
+            out_frame.pts = frame.pts
+            out_frame.time_base = frame.time_base
+            out_container.mux(out_video.encode(out_frame))
+            progress.update(float(timestamp))
 
         if debug:
             print(f"Debug: input {width}x{height} @ {in_video.average_rate} fps, "
@@ -295,20 +332,22 @@ def filter_in_to_out(input_file, output_file, debug=False, debug2=False, slowok=
 
             for frame in packet.decode():
                 image = frame.to_ndarray(format="bgr24")
-                timestamp = float(frame.time) if frame.time is not None else 0.0
-                info = FrameInfo(frame_number, timestamp, width, height,
+                timestamp = (frame.pts * frame.time_base
+                             if frame.pts is not None and frame.time_base is not None
+                             else Fraction(frame_number) / rate)
+                info = FrameInfo(frame_number, float(timestamp), width, height,
                                  debug, debug2, slowok, blur_edge, fill,
                                  retinaface=retinaface, deepface=deepface,
                                  nudenet=nudenet, hyperlpr=hyperlpr)
-                out_image = process_frame(image, info)
-
-                out_frame = build_output_frame(frame, image, out_image, out_video.pix_fmt)
-                out_frame.pts = frame.pts
-                out_frame.time_base = frame.time_base
-                out_container.mux(out_video.encode(out_frame))
+                analyze_frame(image, info)
+                pending.append((timestamp, frame, image, info))
+                detections.append((timestamp, info.boxes))
+                while pending and pending[0][0] < timestamp - window_seconds:
+                    write_pending_frame()
                 frame_number += 1
-                progress.update(timestamp)
 
+        while pending:
+            write_pending_frame()
         out_container.mux(out_video.encode())
         progress.finish()
 

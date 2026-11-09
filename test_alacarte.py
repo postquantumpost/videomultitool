@@ -141,14 +141,14 @@ class AlacarteTests(unittest.TestCase):
                         module._model, "get",
                         side_effect=AssertionError("disabled detector loaded"),
                     ))
-                process_frame = stack.enter_context(patch.object(
-                    filtering, "process_frame", wraps=filtering.process_frame,
+                render_frame = stack.enter_context(patch.object(
+                    filtering, "render_frame", wraps=filtering.render_frame,
                 ))
                 self.run_cli("--alacarte", "debug2", "--input", str(source),
                              "--output", str(target))
-                self.assertEqual(process_frame.call_count, 2)
-                for call in process_frame.call_args_list:
-                    self.assertEqual(len(call.args[1].boxes), 10)
+                self.assertEqual(render_frame.call_count, 2)
+                for call in render_frame.call_args_list:
+                    self.assertEqual(len(call.args[1].boxes), 20)
             with av.open(str(target)) as container:
                 frames = list(container.decode(video=0))
                 self.assertEqual(len(frames), 2)

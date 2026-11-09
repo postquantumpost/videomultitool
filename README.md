@@ -79,6 +79,16 @@ box they return is blurred:
 | `procfun_hyperlpr` | license plates | HyperLPR3 (trained on Chinese plates) |
 | `procfun_debug2` | 10 random boxes, only with `--debug2` | — |
 
+Each list of detected boxes also applies to frames up to `half_window_seconds`
+before and after its source frame (inclusive), using video timestamps rather
+than a fixed frame count. This global setting defaults to `0.15` seconds at
+the top of `filter_in_to_out.py`; set it to `0` for frame-local processing.
+Output is delayed until the future half-window has been analyzed. Buffered
+frames at the end of the video are still written, and output timestamps and
+audio timing are unchanged. All applicable lists are combined before rendering,
+so overlapping boxes across frames are blended without repeatedly blurring or
+filling the same pixel.
+
 Blur strength scales with box size: boxes up to 100 px (largest side) use the
 base blur, larger boxes proportionally more (200 px gets twice the blur). By
 default the blur also extends 10% of the box width beyond the left and right
