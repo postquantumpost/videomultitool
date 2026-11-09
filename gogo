@@ -1,8 +1,26 @@
 #!/usr/bin/env bash
 
 ./videomultitool.py --help
-#./videomultitool.py --debug --blur --input vsamp/nope.mp4 --output nopeout.mp4
-#f=vsamp/nipples.mp4
+
+# ./videomultitool.py --help
+# usage: videomultitool.py [-h] [--debug] [--debug2] [--slowok] [--nobluredge] [--fill] [--blur | --blankless]
+#                          [--alacarte LIST] [--input FILE] [--output FILE]
+# 
+# Operate on video files.
+# 
+# options:
+#   -h, --help       show this help message and exit
+#   --debug          enable debug output
+#   --debug2         enable second-level debug (random test blur boxes)
+#   --slowok         allow slow processing functions (e.g. RetinaFace)
+#   --nobluredge     do not extend the blur with a fade beyond each box edge
+#   --fill           fill each box with its average colour instead of blurring it
+#   --blur           blur detected faces, nudity and license plates (needs --input and --output)
+#   --blankless      crop letterbox/pillarbox borders (needs --input and --output)
+#   --alacarte LIST  blur using only comma-separated retinaface,deepface,nudenet,hyperlpr,debug2; an empty string
+#                    copies the file unchanged (needs --input and --output)
+#   --input FILE     input video file
+#   --output FILE    output video file
 
 process_file()
 {
@@ -19,14 +37,18 @@ process_file()
     #echo ./videomultitool.py --debug --blankless --input $f --output $fout
     #./videomultitool.py --debug --blankless --input $f --output $fout
     set -x
-    time ./videomultitool.py --debug --slowok --blur --input $f --output $fout
+    #time ./videomultitool.py --debug --slowok --blur --input $f --output $fout
+    #time ./videomultitool.py --debug --alacarte 'hyperlpr' --input $f --output $fout
+    time ./videomultitool.py --debug --alacarte 'nudenet' --input $f --output $fout
     set +x
 }
 
 #for fin in nipples.mp4 smile.mp4 knot.mp4 belly.mp4 deep.mp4 noisy.mp4 nope.mp4 xltoy.mp4
 #for fin in nipples.mp4 smile.mp4 deep.mp4
 #for fin in dragon.mp4
-for fin in dragon1.mp4 dragon2.mp4 dragon3.mp4
+#for fin in dragon1.mp4 dragon2.mp4 dragon3.mp4
+#for fin in plates1.mp4
+for fin in nipples.mp4 smile.mp4
 do
     process_file vsamp/$fin
 done

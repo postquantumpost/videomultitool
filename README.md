@@ -75,7 +75,7 @@ box they return is blurred:
 |---|---|---|
 | `procfun_retinaface` | faces | RetinaFace, only with `--slowok` (frame scaled to 960 px max; ~5 s/frame on CPU) |
 | `procfun_deepface` | faces | deepface, YuNet backend |
-| `procfun_nudenet` | exposed breasts/genitalia/buttocks/anus | NudeNet |
+| `procfun_nudenet` | faces and exposed breasts/genitalia/buttocks/anus | NudeNet |
 | `procfun_hyperlpr` | license plates | HyperLPR3 (trained on Chinese plates) |
 | `procfun_debug2` | 10 random boxes, only with `--debug2` | — |
 
@@ -91,6 +91,11 @@ These constants are at the top of `filter_in_to_out.py`.
 
 Thresholds and options are constants at the top of each `procfun_*.py` file.
 A detector that fails to load prints a warning and is skipped.
+
+NudeNet includes both `FACE_FEMALE` and `FACE_MALE`. Its local postprocessing
+uses `NUDENET_NMS_OVERLAP = 0.9` instead of the library's 0.45, retaining more
+overlapping boxes for blurring while still suppressing near-duplicates.
+The existing NMS score cutoff of 0.25 is unchanged (`NUDENET_NMS_SCORE`).
 
 ### `--blankless`
 
