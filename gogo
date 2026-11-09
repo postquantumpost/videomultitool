@@ -3,8 +3,8 @@
 ./videomultitool.py --help
 
 # ./videomultitool.py --help
-# usage: videomultitool.py [-h] [--debug] [--debug2] [--nobluredge] [--fill] [--blur | --blankless]
-#                          [--alacarte LIST] [--input FILE] [--output FILE]
+# usage: videomultitool.py [-h] [--debug] [--debug2] [--nobluredge] [--fill] [--blur | --blankless] [--alacarte LIST]
+#                          [--input FILE] [--output FILE]
 #
 # Operate on video files.
 #
@@ -16,9 +16,8 @@
 #   --fill           fill each box with its average colour instead of blurring it
 #   --blur           blur detected faces, nudity and license plates (needs --input and --output)
 #   --blankless      crop letterbox/pillarbox borders (needs --input and --output)
-#   --alacarte LIST  blur using only comma-separated
-#                    retinaface,deepface,nudenet,hyperlpr,fastanpr,debug2; an empty string copies the
-#                    file unchanged (needs --input and --output)
+#   --alacarte LIST  blur using only comma-separated retinaface,deepface,nudenet,hyperlpr,fastanpr,debug2; an empty
+#                    string copies the file unchanged (needs --input and --output)
 #   --input FILE     input video file
 #   --output FILE    output video file
 
@@ -50,7 +49,8 @@ process_file()
 #for fin in dragon1.mp4 dragon2.mp4 dragon3.mp4
 #for fin in plates1.mp4
 #for fin in nipples.mp4 smile.mp4
-for fin in plates1c1.mp4
+for fin in smile.mp4
+#for fin in plates1c1.mp4
 do
     process_file vsamp/$fin
 done
